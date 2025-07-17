@@ -1,0 +1,42 @@
+.topBar{
+    display: flex;
+    justify-content: space-between;
+}
+.newRequestButton{
+    background: #00d7a0;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    animation: fadein 0.4s ease-out forwards;
+    transition: background 0.3s;
+}
+.newRequestButton:hover{
+    background: #00b37a;
+}
+#rank{
+    background: #000028;
+    color: white;
+    padding: 12px;
+    border-width: 2px;
+    border-color: #00d7a0;
+    border-radius: 6px;
+    animation: fadein 0.4s ease-out forwards;
+    transition: background 0.3s;
+}
+#rank:hover{
+    border-color: #00b37a;
+}
+
+@keyframes fadein {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
