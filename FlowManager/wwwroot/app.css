@@ -22,7 +22,7 @@ a, .btn-link {
 }
 
 .content {
-    padding-top: 2rem;
+    padding-top: 0.5rem;
     min-height: calc(100vh - 4rem);
 }
 
