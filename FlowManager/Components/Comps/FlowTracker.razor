@@ -1,0 +1,37 @@
+@using FlowManager.Domain.Entities
+
+<div class="flow-tracking-container">
+    <div class="progress-bar">
+        @for (int i = 0; i < Steps.Count; i++)
+        {
+            var statusClass = i < CurrentStepIndex
+                ? "step completed"
+                : i == CurrentStepIndex
+                    ? "step active"
+                    : "step";
+
+            var delay = $"{i * 0.4}s"; // 0.2s delay incremental
+
+            <div class="@statusClass" style="animation-delay:@delay">
+                <div class="circle">@(i + 1)</div>
+                <p>@Steps[i].Name</p>
+            </div>
+
+            if (i < Steps.Count - 1)
+            {
+                var connectorClass = i < CurrentStepIndex - 1
+                    ? "connector completed"
+                    : i == CurrentStepIndex - 1
+                        ? "connector active"
+                        : "connector";
+
+                <div class="@connectorClass" style="animation-delay:@delay"></div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<Step> Steps { get; set; } = new();
+    [Parameter] public int CurrentStepIndex { get; set; } = 0;
+}
