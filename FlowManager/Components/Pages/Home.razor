@@ -1,8 +1,39 @@
 ﻿@page "/"
+@using FlowManager.Domain.Entities
+@using FlowManager.Components.Comps
 
 <PageTitle>FlowManager</PageTitle>
 
 <div class="text-center">
-    <h1 class="display-4">FlowManager</h1>
-    <p class="lead">Welcome to your flow management application</p>
+    <h2>Flow Manager</h2>
+    <h4>Welcome back {user}</h4>
+    <div class="topBar">
+        <select id="rank">
+            <option value="volvo">Basic User</option>
+            <option value="saab">Moderator</option>
+            <option value="mercedes">Admin</option>
+        </select>
+        
+        <button type="submit" class="newRequestButton">New request</button>
+    </div>
+    
+    @* Here should be either the requests sent by the basic user or the request to moderate by the moderator *@
+    
 </div>
+
+<FlowTracker Steps="@flow.Steps.OrderBy(s => s.CreatedAt).ToList()" CurrentStepIndex="2" />
+
+@code {
+    Flow flow = new()
+    {
+        Name = "Test Flow",
+        Steps = new List<Step>
+        {
+            new() { Name = "Created" },
+            new() { Name = "Team Leader" },
+            new() { Name = "HR" },
+            new() { Name = "IT" },
+            new() { Name = "Finance" }
+        }
+    };
+}
