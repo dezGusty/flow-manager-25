@@ -3,9 +3,10 @@
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Identity
 @using FlowManager.Domain.Entities
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 
-
+@attribute [AllowAnonymous]
 <div class="container">
 
     <div class="form-container">    

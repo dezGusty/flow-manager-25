@@ -2,6 +2,7 @@
 using FlowManager.Application;
 using FlowManager.Domain.Entities;
 using FlowManager.Infrastructure;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
@@ -22,13 +23,27 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddAuthentication(CookieAuthenticationDefaults .AuthenticationScheme)
+    .AddCookie();
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.Name = "YourAppCookie";
-    options.LoginPath = "/api/auth/login";
+    options.Cookie.Name = "FlowManagerCookie";
+    options.LoginPath = "/auth";
     options.AccessDeniedPath = "/access-denied";
+    
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    
+    options.Events.OnRedirectToLogin = ctx =>
+    {
+        ctx.Response.StatusCode = 401;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = ctx =>
+    {
+        ctx.Response.StatusCode = 403;
+        return Task.CompletedTask;
+    };
 });
 
 
@@ -44,10 +59,6 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddIdentityCore<User>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<User>, NoOpEmailSender>();
 
@@ -68,7 +79,7 @@ app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapIdentityApi<User>();
+//app.MapIdentityApi<User>();
 app.MapControllers();
 
 app.Run();

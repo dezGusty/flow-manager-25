@@ -1,24 +1,25 @@
-﻿@* <Router AppAssembly="@typeof(App).Assembly"> *@
-@*     <Found Context="routeData"> *@
-@*          *@
-@*         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" /> *@
-@*         <FocusOnNavigate RouteData="@routeData" Selector="h1" /> *@
-@*     </Found> *@
-@*     <NotFound> *@
-@*         <PageTitle>Not found</PageTitle> *@
-@*         <LayoutView Layout="@typeof(MainLayout)"> *@
-@*             <p role="alert">Sorry, there's nothing at this address.</p> *@
-@*         </LayoutView> *@
-@*     </NotFound> *@
-@* </Router> *@
-
+﻿@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
+@using FlowManager.Client.Components.shared
+@inject NavigationManager Navigation
 
-<CascadingAuthenticationState>
+
+
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    @{
+                        var path = Navigation.ToBaseRelativePath(Navigation.Uri);
+                        
+                        if (!path.StartsWith("auth", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Navigation.NavigateTo("/auth", true);
+                        }
+                    }
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h1"/>
         </Found>
         <NotFound>
             <LayoutView Layout="@typeof(MainLayout)">
@@ -26,4 +27,4 @@
             </LayoutView>
         </NotFound>
     </Router>
-</CascadingAuthenticationState>
+

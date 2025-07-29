@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 namespace FlowManager.Client.Pages
 {
@@ -20,28 +21,23 @@ namespace FlowManager.Client.Pages
 
         [Inject] 
         protected AuthenticationStateProvider AuthProvider { get; set; }
-        
-        [Inject]
-        protected CookieAuthStateProvider CookieAuthStateProvider { get; set; }
 
         protected async Task HandleLogin()
         {
             var loginData = new { Email = email, Password = password };
-            var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/login?useCookies=true&useSessionCookies=true")
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/login?useCookies=true")
             {
                 Content = JsonContent.Create(loginData)
             };
+            request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
             request.Headers.Add("Accept", "application/json");
-            //request.Headers.Add("credential", "include");
-            request.Headers.Add("Origin", "https://localhost:7195");
             
             var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
             if (response.IsSuccessStatusCode)
             {
-                //(AuthProvider as ApiAuthenticationStateProvider)?.NotifyUserAuthentication(email);
-                //(AuthProvider as ApiAuthenticationStateProvider)?.NotifyUserAuthentication();
-                (CookieAuthStateProvider as CookieAuthStateProvider)?.NotifyUserAuthentication(email);
+                var customAuthProvider = (CookieAuthStateProvider)AuthProvider;
+                customAuthProvider.NotifyUserAuthentication(email);
                 Navigation.NavigateTo("/");
             }
             else
