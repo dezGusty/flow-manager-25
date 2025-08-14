@@ -12,40 +12,28 @@ namespace FlowManager.Client.Services
             _httpClient = httpClient;
         }
 
-        public async Task<List<Form>> GetAllFormsAsync()
+        public async Task<List<FormResponse>> GetAllFormsAsync()
         {
             try
             {
-                Console.WriteLine("[DEBUG] FormService: Making API call to api/forms");
-                var response = await _httpClient.GetAsync("api/forms");
-                Console.WriteLine($"[DEBUG] FormService: Response status: {response.StatusCode}");
+                var response = await _httpClient.GetAsync("api/formresponses");
                 response.EnsureSuccessStatusCode();
-                var forms = await response.Content.ReadFromJsonAsync<List<Form>>() ?? new List<Form>();
-                Console.WriteLine($"[DEBUG] FormService: Received {forms.Count} forms from API");
-                
-                // Debug: Show details of each form
-                foreach (var form in forms)
-                {
-                    Console.WriteLine($"[DEBUG] Form {form.Id} - FlowId: {form.FlowId}, Status: {form.Status}, UserId: {form.UserId}");
-                }
-                
-                return forms;
+                return await response.Content.ReadFromJsonAsync<List<FormResponse>>() ?? new List<FormResponse>();
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"[DEBUG] FormService: Error loading forms: {ex.Message}");
-                return new List<Form>();
+                return new List<FormResponse>();
             }
         }
 
-        public async Task<Form?> GetFormAsync(Guid id)
+        public async Task<FormResponse?> GetFormByIdAsync(Guid id)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/forms/{id}");
+                var response = await _httpClient.GetAsync($"api/formresponses/{id}");
                 if (response.IsSuccessStatusCode)
                 {
-                    return await response.Content.ReadFromJsonAsync<Form>();
+                    return await response.Content.ReadFromJsonAsync<FormResponse>();
                 }
                 return null;
             }
@@ -55,58 +43,28 @@ namespace FlowManager.Client.Services
             }
         }
 
-        public async Task<List<Form>> GetFormsByUserAsync(Guid userId)
+        public async Task<FormResponse?> CreateFormAsync(FormResponse form)
         {
             try
             {
-                var response = await _httpClient.GetAsync($"api/forms/user/{userId}");
+                var response = await _httpClient.PostAsJsonAsync("api/formresponses", form);
                 if (response.IsSuccessStatusCode)
                 {
-                    return await response.Content.ReadFromJsonAsync<List<Form>>() ?? new List<Form>();
+                    return await response.Content.ReadFromJsonAsync<FormResponse>();
                 }
-                return new List<Form>();
+                return null;
             }
             catch
             {
-                return new List<Form>();
-            }
-        }
-
-        public async Task<Form?> CreateFormAsync(Form form)
-        {
-            try
-            {
-                // Convert Form to CreateFormDto for API call
-                var createFormDto = new CreateFormDto
-                {
-                    FlowId = form.FlowId,
-                    UserId = form.UserId,
-                    Comment = form.Comment
-                };
-
-                var response = await _httpClient.PostAsJsonAsync("api/forms", createFormDto);
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadFromJsonAsync<Form>();
-                }
-                
-                // Log the error response for debugging
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"[ERROR] CreateFormAsync failed: {response.StatusCode} - {errorContent}");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] CreateFormAsync exception: {ex.Message}");
                 return null;
             }
         }
 
-        public async Task<bool> UpdateFormAsync(Guid id, Form form)
+        public async Task<bool> UpdateFormAsync(Guid id, FormResponse form)
         {
             try
             {
-                var response = await _httpClient.PutAsJsonAsync($"api/forms/{id}", form);
+                var response = await _httpClient.PutAsJsonAsync($"api/formresponses/{id}", form);
                 return response.IsSuccessStatusCode;
             }
             catch
@@ -119,7 +77,7 @@ namespace FlowManager.Client.Services
         {
             try
             {
-                var response = await _httpClient.DeleteAsync($"api/forms/{id}");
+                var response = await _httpClient.DeleteAsync($"api/formresponses/{id}");
                 return response.IsSuccessStatusCode;
             }
             catch
@@ -128,28 +86,80 @@ namespace FlowManager.Client.Services
             }
         }
 
+        public async Task<List<FormResponse>> GetFormsByUserAsync(Guid userId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/formresponses/user/{userId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<FormResponse>>() ?? new List<FormResponse>();
+                }
+                return new List<FormResponse>();
+            }
+            catch
+            {
+                return new List<FormResponse>();
+            }
+        }
+
+        public async Task<List<FormResponse>> GetFormsByStepAsync(Guid stepId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/formresponses/step/{stepId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<FormResponse>>() ?? new List<FormResponse>();
+                }
+                return new List<FormResponse>();
+            }
+            catch
+            {
+                return new List<FormResponse>();
+            }
+        }
+
+        public async Task<List<FormResponse>> GetFormsByTemplateAsync(Guid templateId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/formresponses/template/{templateId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<FormResponse>>() ?? new List<FormResponse>();
+                }
+                return new List<FormResponse>();
+            }
+            catch
+            {
+                return new List<FormResponse>();
+            }
+        }
+
         public async Task<bool> ApproveFormStepAsync(Guid formId, Guid moderatorId)
         {
             try
             {
-                var request = new { ModeratorId = moderatorId };
-                var response = await _httpClient.PutAsJsonAsync($"api/forms/{formId}/approve", request);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"[DEBUG] Form {formId} approved successfully");
-                    return true;
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"[ERROR] Failed to approve form {formId}: {response.StatusCode} - {errorContent}");
-                    return false;
-                }
+                var response = await _httpClient.PostAsync($"api/formresponses/{formId}/approve/{moderatorId}", null);
+                return response.IsSuccessStatusCode;
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"[ERROR] Exception approving form {formId}: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> RejectFormStepAsync(Guid formId, Guid moderatorId, string reason)
+        {
+            try
+            {
+                var payload = new { reason };
+                var response = await _httpClient.PostAsJsonAsync($"api/formresponses/{formId}/reject/{moderatorId}", payload);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
                 return false;
             }
         }

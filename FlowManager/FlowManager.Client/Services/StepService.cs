@@ -103,37 +103,11 @@ namespace FlowManager.Client.Services
             }
         }
 
-        public async Task<bool> AddStepToFlowAsync(Guid stepId, Guid flowId, int order = 0)
-        {
-            try
-            {
-                var response = await _httpClient.PostAsync($"api/steps/{stepId}/add-to-flow/{flowId}?order={order}", null);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        public async Task<bool> RemoveStepFromFlowAsync(Guid stepId, Guid flowId)
-        {
-            try
-            {
-                var response = await _httpClient.DeleteAsync($"api/steps/{stepId}/remove-from-flow/{flowId}");
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         public async Task<bool> AssignUserToStepAsync(Guid stepId, Guid userId)
         {
             try
             {
-                var response = await _httpClient.PostAsync($"api/steps/{stepId}/assign-user/{userId}", null);
+                var response = await _httpClient.PostAsync($"api/steps/{stepId}/users/{userId}", null);
                 return response.IsSuccessStatusCode;
             }
             catch
@@ -146,7 +120,33 @@ namespace FlowManager.Client.Services
         {
             try
             {
-                var response = await _httpClient.DeleteAsync($"api/steps/{stepId}/unassign-user/{userId}");
+                var response = await _httpClient.DeleteAsync($"api/steps/{stepId}/users/{userId}");
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> AddStepToFlowAsync(Guid stepId, Guid flowId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"api/steps/{stepId}/flows/{flowId}", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> RemoveStepFromFlowAsync(Guid stepId, Guid flowId)
+        {
+            try
+            {
+                var response = await _httpClient.DeleteAsync($"api/steps/{stepId}/flows/{flowId}");
                 return response.IsSuccessStatusCode;
             }
             catch

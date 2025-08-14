@@ -36,6 +36,12 @@ builder.Services.AddScoped<FlowService>();
 builder.Services.AddScoped<StepService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<FormService>();
+builder.Services.AddScoped<FormTemplateService>();
+builder.Services.AddScoped<ComponentService>();
+builder.Services.AddScoped<RoleService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<PasswordResetService>();
+
 
 
 builder.Services.AddBlazorBootstrap();
