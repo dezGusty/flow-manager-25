@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -34,15 +35,78 @@ namespace FlowManager.Infrastructure.Utils
                 {
                     var targetType = entityProperty.PropertyType;
 
-                    if (IsNullableType(targetType))
+                    if (IsDictionaryType(targetType))
                     {
-                        targetType = Nullable.GetUnderlyingType(targetType);
+                        PatchDictionary(entity, entityProperty, dtoValue);
                     }
+                    else
+                    {
+                        if (IsNullableType(targetType))
+                        {
+                            targetType = Nullable.GetUnderlyingType(targetType);
+                        }
 
-                    var convertedValue = Convert.ChangeType(dtoValue, targetType);
-                    entityProperty.SetValue(entity, convertedValue);
+                        var convertedValue = Convert.ChangeType(dtoValue, targetType);
+                        entityProperty.SetValue(entity, convertedValue);
+                    }
                 }
             }
+        }
+
+        private static void PatchDictionary(object entity, PropertyInfo entityProperty, object dtoValue)
+        {
+            var entityDictionary = entityProperty?.GetValue(entity) as IDictionary;
+            var dtoDictionary = dtoValue as IDictionary;
+
+            if (dtoDictionary == null)
+                return;
+
+            if (entityDictionary == null)
+            {
+                var dictionaryType = entityProperty.PropertyType;
+                if (dictionaryType.IsInterface)
+                {
+                    var genericArgs = dictionaryType.GetGenericArguments();
+                    var concreteType = typeof(Dictionary<,>).MakeGenericType(genericArgs);
+                    entityDictionary = Activator.CreateInstance(concreteType) as IDictionary;
+                }
+                else
+                {
+                    entityDictionary = Activator.CreateInstance(dictionaryType) as IDictionary;
+                }
+                entityProperty.SetValue(entity, entityDictionary);
+            }
+
+            foreach (DictionaryEntry entry in dtoDictionary)
+            {
+                var key = entry.Key;
+                var newValue = entry.Value;
+
+                if (!entityDictionary.Contains(key) ||
+                    !AreValuesEqual(entityDictionary[key], newValue))
+                {
+                    entityDictionary[key] = newValue;
+                }
+            }
+        }
+
+        private static bool AreValuesEqual(object existingValue, object newValue)
+        {
+            if (existingValue == null && newValue == null)
+                return true;
+
+            if (existingValue == null || newValue == null)
+                return false;
+
+            return existingValue.Equals(newValue);
+        }
+
+        private static bool IsDictionaryType(Type type)
+        {
+            return typeof(IDictionary).IsAssignableFrom(type) ||
+                   (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>)) ||
+                   (type.IsGenericType && type.GetInterfaces().Any(x =>
+                       x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IDictionary<,>)));
         }
 
         private static bool ShouldPatchValue(object value, Type propertyType)

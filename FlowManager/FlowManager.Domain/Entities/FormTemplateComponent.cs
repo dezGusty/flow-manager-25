@@ -9,10 +9,6 @@ namespace FlowManager.Domain.Entities
     public class FormTemplateComponent
     {
         public Guid Id { get; set; } = Guid.NewGuid();
-        public string Type { get; set; }
-        public string Label { get; set; }
-        public bool Required { get; set; }
-        public Dictionary<string, object> Properties { get; set; }
 
         // navigation properties
         public virtual FormTemplate FormTemplate { get; set; }

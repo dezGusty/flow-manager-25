@@ -3,6 +3,7 @@ using FlowManager.Application.DTOs.Responses;
 using FlowManager.Application.DTOs.Responses.FormTemplate;
 using FlowManager.Application.DTOs.Responses.FormTemplateComponent;
 using FlowManager.Application.Interfaces;
+using FlowManager.Domain.Dtos;
 using FlowManager.Domain.Entities;
 using FlowManager.Domain.IRepositories;
 using FlowManager.Infrastructure.Utils;
@@ -49,7 +50,8 @@ namespace FlowManager.Infrastructure.Services
 
         public async Task<PagedResponseDto<FormTemplateResponseDto>> GetAllFormTemplatesQueriedAsync(QueriedFormTemplateRequestDto payload)
         {
-            (List<FormTemplate> data, int totalCount) = await _formTemplateRepository.GetAllFormTemplatesQueriedAsync(payload.Name,payload.QueryParams.ToQueryParams());
+            QueryParams? parameters = payload.QueryParams?.ToQueryParams();
+            (List<FormTemplate> data, int totalCount) = await _formTemplateRepository.GetAllFormTemplatesQueriedAsync(payload.Name, parameters);
 
             return new PagedResponseDto<FormTemplateResponseDto>
             {
@@ -58,21 +60,17 @@ namespace FlowManager.Infrastructure.Services
                     Id = ft.Id,
                     Name = ft.Name,
                     Content = ft.Content,
-                    Components = ft.Components.Select(ftc => new FormTemplateComponentResponseDto
+                    Components = ft.Components.Where(ftc => ftc.DeletedAt == null).Select(ftc => new FormTemplateComponentResponseDto
                     {
-                        Id = ftc.Id,
-                        Label = ftc.Label,
-                        Type = ftc.Type,
-                        Required = ftc.Required,
-                        Properties = ftc.Properties ?? new Dictionary<string, object>()
+                        Id = ftc.ComponentId,
                     }).ToList(),
                     CreatedAt = ft.CreatedAt,
                     UpdatedAt = ft.UpdatedAt,
                     DeletedAt = ft.DeletedAt
                 }).ToList(),
                 TotalCount = totalCount,
-                Page = payload.QueryParams.Page ?? 1,
-                PageSize = payload.QueryParams.PageSize ?? totalCount,
+                Page = payload.QueryParams?.Page ?? 1,
+                PageSize = payload.QueryParams?.PageSize ?? totalCount,
             };
         }
         
@@ -91,13 +89,9 @@ namespace FlowManager.Infrastructure.Services
                 Id = formTemplate.Id,
                 Name = formTemplate.Name,
                 Content = formTemplate.Content,
-                Components = formTemplate.Components.Select(ftc => new FormTemplateComponentResponseDto
+                Components = formTemplate.Components.Where(ftc => ftc.DeletedAt == null).Select(ftc => new FormTemplateComponentResponseDto
                 {
-                    Id = ftc.Id,
-                    Label = ftc.Label,
-                    Type = ftc.Type,
-                    Required = ftc.Required,
-                    Properties = ftc.Properties ?? new Dictionary<string, object>()
+                    Id = ftc.ComponentId,
                 }).ToList(),
                 CreatedAt = formTemplate.CreatedAt,
                 UpdatedAt = formTemplate.UpdatedAt,
@@ -105,16 +99,53 @@ namespace FlowManager.Infrastructure.Services
             };
         }
 
-        public async Task<FormTemplateResponseDto?> PatchFormTemplateAsync(PatchFormTemplateRequestDto payload)
+        public async Task<FormTemplateResponseDto?> PatchFormTemplateAsync(Guid id, PatchFormTemplateRequestDto payload)
         {
-            var formTemplateToPatch = await _formTemplateRepository.GetFormTemplateByIdAsync(payload.Id);
+            var formTemplateToPatch = await _formTemplateRepository.GetFormTemplateByIdAsync(id);
 
             if (formTemplateToPatch == null)
             {
                 return null; // middleware exception later
             }
 
-            PatchHelper.PatchFrom<PatchFormTemplateRequestDto, FormTemplate>(formTemplateToPatch, payload);
+            if(payload.Name != null && !string.IsNullOrEmpty(payload.Name))
+                formTemplateToPatch.Name = payload.Name;
+
+            if(payload.Content != null && !string.IsNullOrEmpty(payload.Content))
+                formTemplateToPatch.Content = payload.Content;
+
+            if(payload.Components != null)
+            {
+                foreach(FormTemplateComponent component in formTemplateToPatch.Components)
+                {
+                    component.DeletedAt = DateTime.UtcNow;
+                }
+
+                foreach(Guid componentId in payload.Components)
+                {
+                    if(formTemplateToPatch.Components.Any(c => c.ComponentId == componentId))
+                    {
+                        FormTemplateComponent? existingComponent = await _formTemplateRepository.GetFormTemplateComponentByIdAsync(componentId, includeDeleted: true);
+                        existingComponent.DeletedAt = null;
+                    }
+                    else
+                    {
+                        FormTemplateComponent newComponent = new FormTemplateComponent
+                        {
+                            ComponentId = componentId,
+                            FormTemplateId = formTemplateToPatch.Id
+                        };
+                        formTemplateToPatch.Components.Add(newComponent);
+                    }
+                }
+
+                formTemplateToPatch.Components = payload.Components.Select(c => new FormTemplateComponent
+                {
+                    ComponentId = c,
+                    FormTemplateId = formTemplateToPatch.Id
+                }).ToList();
+            }
+
             formTemplateToPatch.UpdatedAt = DateTime.UtcNow;
 
             await _formTemplateRepository.SaveChangesAsync();
@@ -124,9 +155,9 @@ namespace FlowManager.Infrastructure.Services
                 Id = formTemplateToPatch.Id,
                 Name = formTemplateToPatch.Name,
                 Content = formTemplateToPatch.Content,
-                Components = formTemplateToPatch.Components.Select(ftc => new FormTemplateComponentResponseDto
+                Components = formTemplateToPatch.Components.Where(ftc => ftc.DeletedAt == null).Select(ftc => new FormTemplateComponentResponseDto
                 {
-                    Id = ftc.Id,
+                    Id = ftc.ComponentId,
                 }).ToList(),
                 CreatedAt = formTemplateToPatch.CreatedAt,
                 UpdatedAt = formTemplateToPatch.UpdatedAt,
@@ -143,16 +174,16 @@ namespace FlowManager.Infrastructure.Services
 
             FormTemplate newFormTemplate = new FormTemplate
             {
-                Id = Guid.NewGuid(),
                 Name = payload.Name,
                 Content = payload.Content,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                Components = payload.Components.Select(c => new FormTemplateComponent
-                {
-                    Id = Guid.NewGuid()
-                }).ToList()
             };
+
+            newFormTemplate.Components = payload.Components.Select(c => new FormTemplateComponent
+            {
+                ComponentId = c,
+                FormTemplateId = newFormTemplate.Id 
+            }).ToList();
 
             await _formTemplateRepository.AddAsync(newFormTemplate);
 
@@ -161,7 +192,7 @@ namespace FlowManager.Infrastructure.Services
                 Id = newFormTemplate.Id,
                 Name = newFormTemplate.Name,
                 Content = newFormTemplate.Content,
-                Components = newFormTemplate.Components.Select(ftc => new FormTemplateComponentResponseDto
+                Components = newFormTemplate.Components.Where(ftc => ftc.DeletedAt == null).Select(ftc => new FormTemplateComponentResponseDto
                 {
                     Id = ftc.Id
                 }).ToList(),

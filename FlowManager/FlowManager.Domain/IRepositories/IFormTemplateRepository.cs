@@ -15,5 +15,6 @@ namespace FlowManager.Domain.IRepositories
         Task<FormTemplate?> GetFormTemplateByNameAsync(string email);
         Task SaveChangesAsync();
         Task AddAsync(FormTemplate formTemplate);
+        Task<FormTemplateComponent?> GetFormTemplateComponentByIdAsync(Guid id, bool includeDeleted = false);
     }
 }

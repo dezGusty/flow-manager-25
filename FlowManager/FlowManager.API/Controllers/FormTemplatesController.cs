@@ -73,7 +73,7 @@ namespace FlowManager.API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> PatchFormTemplateAsync(Guid id,[FromBody] PatchFormTemplateRequestDto payload)
         {
-            var result = await _formTemplateService.PatchFormTemplateAsync(payload);
+            var result = await _formTemplateService.PatchFormTemplateAsync(id, payload);
 
             return Ok(new
             {

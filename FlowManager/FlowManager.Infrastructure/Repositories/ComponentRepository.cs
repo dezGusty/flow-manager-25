@@ -44,6 +44,11 @@ namespace FlowManager.Infrastructure.Repositories
 
             int totalCount = query.Count();
 
+            if (parameters == null)
+            {
+                return (await query.ToListAsync(), totalCount);
+            }
+
             // sorting
             if (parameters.SortBy != null)
             {
@@ -51,11 +56,6 @@ namespace FlowManager.Infrastructure.Repositories
                     query = query.ApplySorting<Component>(parameters.SortBy, SortDesc);
                 else
                     query = query.ApplySorting<Component>(parameters.SortBy, false);
-            }
-
-            if (parameters == null)
-            {
-                return (await query.ToListAsync(), totalCount);
             }
 
             // pagination

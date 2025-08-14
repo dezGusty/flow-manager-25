@@ -27,7 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IComponentService, ComponentService>();
         services.AddScoped<IFlowService, FlowService>();
         services.AddScoped<IFormTemplateService, FormTemplateService>();
-        services.AddScoped<IFormResponseService, FormResponseService>();
+        services.AddScoped<IRoleService, RoleService>();
         // services.AddScoped<IFormService, FormSer>();
         // services.AddScoped<IAuth, AuthService>();
         services.AddScoped<IStepService, StepService>();

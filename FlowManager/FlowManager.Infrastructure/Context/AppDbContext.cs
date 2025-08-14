@@ -73,17 +73,6 @@ namespace FlowManager.Infrastructure.Context
                       .HasColumnType("jsonb"); // PostgreSQL jsonb type
             });
 
-            builder.Entity<FormTemplateComponent>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.Property(e => e.Properties)
-                      .HasConversion(
-                          v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-                          v => JsonSerializer.Deserialize<Dictionary<string, object>>(v, (JsonSerializerOptions)null))
-                      .HasColumnType("jsonb"); // PostgreSQL jsonb type
-            });
-
             builder.Entity<FormResponse>(entity =>
             {
                 entity.HasKey(e => e.Id);

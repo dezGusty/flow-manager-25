@@ -3,6 +3,7 @@ using FlowManager.Application.DTOs.Requests.FormTemplate;
 using FlowManager.Application.DTOs.Responses;
 using FlowManager.Application.DTOs.Responses.Component;
 using FlowManager.Application.IServices;
+using FlowManager.Domain.Dtos;
 using FlowManager.Domain.Entities;
 using FlowManager.Domain.IRepositories;
 using FlowManager.Infrastructure.Utils;
@@ -51,7 +52,8 @@ namespace FlowManager.Application.Services
 
         public async Task<PagedResponseDto<ComponentResponseDto>> GetComponentsQueriedAsync(QueriedComponentRequestDto payload)
         {
-            (List<Component> result,int totalCount) = await _componentRepository.GetAllComponentsQueriedAsync(payload.Type, payload.Label, payload.QueryParams.ToQueryParams());
+            QueryParams? parameters = payload.QueryParams?.ToQueryParams();
+            (List<Component> result,int totalCount) = await _componentRepository.GetAllComponentsQueriedAsync(payload.Type, payload.Label, parameters);
         
             return new PagedResponseDto<ComponentResponseDto>
             {
@@ -67,8 +69,8 @@ namespace FlowManager.Application.Services
                     DeletedAt = c.DeletedAt
                 }).ToList(),
                 TotalCount = totalCount,
-                Page = payload.QueryParams.Page ?? 1,
-                PageSize = payload.QueryParams.PageSize ?? totalCount,
+                Page = payload.QueryParams?.Page ?? 1,
+                PageSize = payload.QueryParams?.PageSize ?? totalCount,
             };
         }
 
@@ -94,9 +96,9 @@ namespace FlowManager.Application.Services
             };
         }
 
-        public async Task<ComponentResponseDto?> PatchComponentAsync(PatchComponentRequestDto payload)
+        public async Task<ComponentResponseDto?> PatchComponentAsync(Guid id,PatchComponentRequestDto payload)
         {
-            Component? componentToPatch = _componentRepository.GetComponentByIdAsync(payload.Id).Result;
+            Component? componentToPatch = _componentRepository.GetComponentByIdAsync(id).Result;
 
             if(componentToPatch == null)
             {

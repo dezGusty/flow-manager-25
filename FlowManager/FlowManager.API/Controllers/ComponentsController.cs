@@ -72,14 +72,14 @@ namespace FlowManager.API.Controllers
             });
         }
 
-        [HttpPatch]
+        [HttpPatch("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> PatchComponentAsync([FromBody] PatchComponentRequestDto payload)
+        public async Task<IActionResult> PatchComponentAsync(Guid id, [FromBody] PatchComponentRequestDto payload)
         {
-            ComponentResponseDto? result = await _componentService.PatchComponentAsync(payload);
+            ComponentResponseDto? result = await _componentService.PatchComponentAsync(id,payload);
 
             return Ok(new
             {

@@ -8,8 +8,6 @@ namespace FlowManager.Application.DTOs.Requests.Component
 {
     public class PatchComponentRequestDto
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
-
         public string? Type { get; set; }
         public string? Label { get; set; }
         public bool? Required { get; set; }

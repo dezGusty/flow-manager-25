@@ -15,6 +15,6 @@ namespace FlowManager.Application.Interfaces
         Task<FormTemplateResponseDto?> GetFormTemplateByIdAsync(Guid id);
         Task<FormTemplateResponseDto> PostFormTemplateAsync(PostFormTemplateRequestDto payload);
         Task<FormTemplateResponseDto?> DeleteFormTemplateAsync(Guid id);
-        Task<FormTemplateResponseDto?> PatchFormTemplateAsync(PatchFormTemplateRequestDto payload);
+        Task<FormTemplateResponseDto?> PatchFormTemplateAsync(Guid id,PatchFormTemplateRequestDto payload);
     }
 }

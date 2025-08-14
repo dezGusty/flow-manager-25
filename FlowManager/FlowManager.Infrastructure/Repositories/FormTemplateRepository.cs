@@ -93,5 +93,14 @@ namespace FlowManager.Infrastructure.Repositories
             _context.FormTemplates.Add(formTemplate);
             await SaveChangesAsync();
         }
+
+        public async Task<FormTemplateComponent?> GetFormTemplateComponentByIdAsync(Guid id, bool includeDeleted = false)
+        {
+            IQueryable<FormTemplateComponent> query = _context.FormTemplateComponents;
+            if (!includeDeleted)
+                query = query.Where(ftc => ftc.DeletedAt == null);
+
+            return await query.FirstOrDefaultAsync(ftc => ftc.Id == id);
+        }
     }
 }

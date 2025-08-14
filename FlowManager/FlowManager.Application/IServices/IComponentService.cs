@@ -17,6 +17,6 @@ namespace FlowManager.Application.IServices
         Task<ComponentResponseDto?> GetComponentByIdAsync(Guid id);
         Task<ComponentResponseDto> PostComponentAsync(PostComponentRequestDto payload);
         Task<ComponentResponseDto?> DeleteComponentAsync(Guid id);
-        Task<ComponentResponseDto?> PatchComponentAsync(PatchComponentRequestDto payload);
+        Task<ComponentResponseDto?> PatchComponentAsync(Guid id, PatchComponentRequestDto payload);
     }
 }
