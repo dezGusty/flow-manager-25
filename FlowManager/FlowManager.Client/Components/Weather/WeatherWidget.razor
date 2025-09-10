@@ -1,0 +1,419 @@
+@using System.Text.Json
+@using System.Globalization
+@using FlowManager.Client.Services
+@inject HttpClient Http
+
+<div class="weather-widget @GetWeatherClass()" @onclick="ToggleWeatherPopup">
+    <div class="weather-background">
+        @if (currentWeather != null)
+        {
+            <div class="weather-content">
+                <div class="weather-icon">
+                    @GetWeatherIcon()
+                </div>
+                <div class="weather-info">
+                    <div class="temperature">@currentWeather.Temperature°C</div>
+                    <div class="description">@currentWeather.Description</div>
+                    <div class="location">@currentWeather.Location</div>
+                </div>
+            </div>
+        }
+        else if (isLoading)
+        {
+            <div class="weather-loading">
+                <div class="loading-spinner"></div>
+                <span>Loading weather...</span>
+            </div>
+        }
+        else if (hasError)
+        {
+            <div class="weather-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Weather unavailable</span>
+            </div>
+        }
+    </div>
+
+    <!-- Weather Effects -->
+    @if (currentWeather != null)
+    {
+        @switch (currentWeather.Condition.ToLower())
+        {
+            case "rain":
+            case "drizzle":
+                <div class="rain-effect">
+                    @for (int i = 0; i < 50; i++)
+                    {
+                        <div class="raindrop"
+                            style="left: @(Random.Shared.Next(0, 100))%; animation-delay: @(Random.Shared.Next(0, 2000))ms;"></div>
+                    }
+                </div>
+                break;
+
+            case "snow":
+                <div class="snow-effect">
+                    @for (int i = 0; i < 30; i++)
+                    {
+                        <div class="snowflake"
+                            style="left: @(Random.Shared.Next(0, 100))%; animation-delay: @(Random.Shared.Next(0, 3000))ms;">❄</div>
+                    }
+                </div>
+                break;
+
+            case "clear":
+                <div class="sun-effect">
+                    <div class="sun-rays"></div>
+                </div>
+                break;
+
+            case "clouds":
+                <div class="clouds-effect">
+                    <div class="cloud cloud1">☁</div>
+                    <div class="cloud cloud2">☁</div>
+                    <div class="cloud cloud3">☁</div>
+                </div>
+                break;
+        }
+    }
+</div>
+
+@code {
+    private WeatherData? currentWeather;
+    private bool isLoading = true;
+    private bool hasError = false;
+    private Timer? refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if weather data is already cached
+        if (WeatherCache.CachedWeather == null || WeatherCache.IsExpired())
+        {
+            await LoadWeatherData();
+        }
+        else
+        {
+            // Convert cached weather to local format
+            var cached = WeatherCache.CachedWeather;
+            currentWeather = new WeatherData
+            {
+                Temperature = (int)Math.Round(cached.Temperature),
+                Description = cached.Description ?? "",
+                Condition = cached.Main ?? "",
+                Location = cached.City ?? "Brașov",
+                IconCode = cached.Icon ?? "",
+                FeelsLike = cached.Temperature, // Use same as temp for cached data
+                Humidity = 60, // Default values for cached data  
+                Pressure = 1013,
+                Visibility = 10000,
+                WindSpeed = 3.0,
+                UVIndex = 5.0
+            };
+            isLoading = false;
+            StateHasChanged();
+        }
+
+        // Refresh every 30 minutes
+        refreshTimer = new Timer(async _ => await InvokeAsync(LoadWeatherData), null, TimeSpan.FromMinutes(30),
+        TimeSpan.FromMinutes(30));
+    }
+
+    private async Task LoadWeatherData()
+    {
+        try
+        {
+            isLoading = true;
+            hasError = false;
+            StateHasChanged();
+
+            // Using OpenWeatherMap free API for Brasov
+            var apiKey = "bd5e378503939ddaee76f12ad7a97608"; // Free API key - replace with your own
+            var city = "Brasov,RO";
+            var url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}&units=metric";
+
+            var response = await Http.GetStringAsync(url);
+            var weatherResponse = JsonSerializer.Deserialize<OpenWeatherResponse>(response, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (weatherResponse != null)
+            {
+                currentWeather = new WeatherData
+                {
+                    Temperature = (int)Math.Round(weatherResponse.Main.Temp),
+                    Description = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(weatherResponse.Weather[0].Description),
+                    Condition = weatherResponse.Weather[0].Main,
+                    Location = weatherResponse.Name,
+                    IconCode = weatherResponse.Weather[0].Icon,
+                    FeelsLike = weatherResponse.Main.Feels_Like,
+                    Humidity = weatherResponse.Main.Humidity,
+                    Pressure = weatherResponse.Main.Pressure,
+                    Visibility = weatherResponse.Visibility,
+                    WindSpeed = weatherResponse.Wind.Speed,
+                    UVIndex = 5.0 // Default value since UV index requires separate API call
+                };
+
+                // Cache the weather data
+                WeatherCache.CachedWeather = new FlowManager.Client.Services.WeatherInfo
+                {
+                    Temperature = weatherResponse.Main.Temp,
+                    Description = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(weatherResponse.Weather[0].Description),
+                    Main = weatherResponse.Weather[0].Main,
+                    City = weatherResponse.Name,
+                    Icon = weatherResponse.Weather[0].Icon
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            hasError = true;
+            Console.WriteLine($"Weather API Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetWeatherClass()
+    {
+        if (currentWeather == null) return "weather-default";
+
+        return currentWeather.Condition.ToLower() switch
+        {
+            "clear" => "weather-sunny",
+            "rain" or "drizzle" => "weather-rainy",
+            "snow" => "weather-snowy",
+            "clouds" => "weather-cloudy",
+            "thunderstorm" => "weather-stormy",
+            "mist" or "fog" => "weather-foggy",
+            _ => "weather-default"
+        };
+    }
+
+    private MarkupString GetWeatherIcon()
+    {
+        if (currentWeather == null) return new MarkupString("🌡️");
+
+        var icon = currentWeather.Condition.ToLower() switch
+        {
+            "clear" => "☀️",
+            "rain" => "🌧️",
+            "drizzle" => "🌦️",
+            "snow" => "❄️",
+            "clouds" => "☁️",
+            "thunderstorm" => "⛈️",
+            "mist" or "fog" => "🌫️",
+            _ => "🌡️"
+        };
+
+        return new MarkupString(icon);
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
+
+    // Weather popup functionality
+    private bool showWeatherPopup = false;
+
+    private void ToggleWeatherPopup()
+    {
+        showWeatherPopup = !showWeatherPopup;
+    }
+
+    private void CloseWeatherPopup()
+    {
+        showWeatherPopup = false;
+    }
+
+    private string GetUVIndexText(double uvIndex)
+    {
+        if (uvIndex < 3) return "Low";
+        if (uvIndex < 6) return "Moderate";
+        if (uvIndex < 8) return "High";
+        if (uvIndex < 11) return "Very High";
+        return "Extreme";
+    }
+
+    private string GetHumidityDescription(int humidity)
+    {
+        if (humidity < 30) return "low for comfort";
+        if (humidity < 50) return "comfortable";
+        if (humidity < 70) return "slightly high";
+        return "quite humid";
+    }
+
+    private string GetWindDescription(double windSpeed)
+    {
+        if (windSpeed < 2) return "Calm";
+        if (windSpeed < 6) return "Light breeze";
+        if (windSpeed < 12) return "Moderate breeze";
+        if (windSpeed < 20) return "Strong breeze";
+        return "Very windy";
+    }
+
+    // Weather data models
+    public class WeatherData
+    {
+        public int Temperature { get; set; }
+        public string Description { get; set; } = "";
+        public string Condition { get; set; } = "";
+        public string Location { get; set; } = "";
+        public string IconCode { get; set; } = "";
+        public double FeelsLike { get; set; }
+        public int Humidity { get; set; }
+        public double Pressure { get; set; }
+        public int Visibility { get; set; }
+        public double WindSpeed { get; set; }
+        public double UVIndex { get; set; }
+    }
+
+    public class OpenWeatherResponse
+    {
+        public MainData Main { get; set; } = new();
+        public WeatherDetail[] Weather { get; set; } = Array.Empty<WeatherDetail>();
+        public string Name { get; set; } = "";
+        public WindData Wind { get; set; } = new();
+        public int Visibility { get; set; }
+    }
+
+    public class MainData
+    {
+        public double Temp { get; set; }
+        public double Feels_Like { get; set; }
+        public int Humidity { get; set; }
+        public double Pressure { get; set; }
+    }
+
+    public class WindData
+    {
+        public double Speed { get; set; }
+    }
+
+    public class WeatherDetail
+    {
+        public string Main { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Icon { get; set; } = "";
+    }
+}
+
+<!-- Enhanced Weather Popup -->
+@if (showWeatherPopup && currentWeather != null)
+{
+    <div class="weather-popup-overlay" @onclick="CloseWeatherPopup">
+        <div class="weather-popup @GetWeatherClass()" @onclick:stopPropagation="true">
+            
+            <!-- Animated Weather Background -->
+            <div class="popup-weather-background">
+                @switch (currentWeather.Condition?.ToLower())
+                {
+                    case "rain":
+                    case "drizzle":
+                        <div class="popup-rain-effect">
+                            @for (int i = 0; i < 100; i++)
+                            {
+                                <div class="popup-raindrop"
+                                    style="left: @(Random.Shared.Next(0, 100))%; animation-delay: @(Random.Shared.Next(0, 2000))ms;"></div>
+                            }
+                        </div>
+                        break;
+                    
+                    case "snow":
+                        <div class="popup-snow-effect">
+                            @for (int i = 0; i < 60; i++)
+                            {
+                                <div class="popup-snowflake"
+                                    style="left: @(Random.Shared.Next(0, 100))%; animation-delay: @(Random.Shared.Next(0, 3000))ms;">❄</div>
+                            }
+                        </div>
+                        break;
+                    
+                    case "clear":
+                        <div class="popup-sun-effect">
+                            <div class="popup-sun-rays"></div>
+                        </div>
+                        break;
+                    
+                    case "clouds":
+                        <div class="popup-clouds-effect">
+                            <div class="popup-cloud popup-cloud1">☁</div>
+                            <div class="popup-cloud popup-cloud2">☁</div>
+                            <div class="popup-cloud popup-cloud3">☁</div>
+                            <div class="popup-cloud popup-cloud4">☁</div>
+                        </div>
+                        break;
+                }
+            </div>
+
+            <!-- Popup Content -->
+            <div class="weather-popup-content">
+                <div class="popup-header">
+                    <div class="popup-main-info">
+                        <div class="popup-weather-icon">@GetWeatherIcon()</div>
+                        <div class="popup-temperature">@currentWeather.Temperature°C</div>
+                        <div class="popup-description">@currentWeather.Description</div>
+                        <div class="popup-location">📍 @currentWeather.Location, Romania</div>
+                    </div>
+                    <button class="popup-close-btn" @onclick="CloseWeatherPopup">✕</button>
+                </div>
+
+                <div class="popup-details">
+                    <div class="popup-section">
+                        <h3>Weather Details</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Feels like:</span>
+                                <span class="detail-value">@(currentWeather.FeelsLike)°C</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Humidity:</span>
+                                <span class="detail-value">@(currentWeather.Humidity)%</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Pressure:</span>
+                                <span class="detail-value">@(currentWeather.Pressure) hPa</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Visibility:</span>
+                                <span class="detail-value">@(currentWeather.Visibility / 1000) km</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Wind Speed:</span>
+                                <span class="detail-value">@(currentWeather.WindSpeed) m/s</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">UV Index:</span>
+                                <span class="detail-value">@GetUVIndexText(currentWeather.UVIndex)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="popup-section">
+                        <h3>Cloud Coverage Map - Brașov Region</h3>
+                        <div class="weather-map">
+                            <iframe 
+                                src="https://embed.windy.com/embed2.html?lat=45.648&lon=25.591&detailLat=45.648&detailLon=25.591&width=100%25&height=300&zoom=9&level=surface&overlay=clouds&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1"
+                                width="100%" 
+                                height="300" 
+                                frameborder="0">
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <div class="popup-section">
+                        <h3>Forecast Trend</h3>
+                        <div class="forecast-info">
+                            <p>🌡️ Current conditions in Brașov show @currentWeather.Description.ToLower() with temperatures around @currentWeather.Temperature°C.</p>
+                            <p>💧 Humidity levels are at @currentWeather.Humidity%, which is @GetHumidityDescription(currentWeather.Humidity).</p>
+                            <p>🌬️ Wind conditions: @GetWindDescription(currentWeather.WindSpeed) at @currentWeather.WindSpeed m/s.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

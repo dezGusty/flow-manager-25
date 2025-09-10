@@ -1,8 +1,10 @@
-﻿@using FlowManager.Client.Services;
-@using FlowManager.Client.ViewModels;
-@using FlowManager.Shared.DTOs;
-
-@inject NavigationManager Navigation;
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using System.Security.Claims
+@using System.Text.Json
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject HttpClient Http
 
 <FlowManager.Client.Components.Admin.ImpersonationIndicator.ImpersonationIndicator/>
 
@@ -12,8 +14,12 @@
             <h1 class="logo-title" link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap" rel="stylesheet">FTD</h1>
         </div>
 
-        <div class="nav-actions">
+        <!-- Weather Widget Component -->
+        <div class="nav-weather">
+            <WeatherWidget />
+        </div>
 
+        <div class="nav-actions">
             <div class="home-btn">
                 <button @onclick="NavigateToHome">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -26,8 +32,9 @@
     </nav>
 </div>
 
-@code {
 
+
+@code {
     private void NavigateToHome()
     {
         Navigation.NavigateTo("/home");

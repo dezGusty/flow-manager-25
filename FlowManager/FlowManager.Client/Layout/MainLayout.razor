@@ -1,16 +1,10 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    
-    
+    <FlowManager.Client.Components.NavBar.Navbar />
     <div class="main-layout">
 
         <main>
-            @* <header> *@
-            @*     <div class="topnav"> *@
-            @*         <img src="lib/siemens-logo.png" alt="Siemens Logo" id="logo" /> *@
-            @*     </div> *@
-            @* </header> *@
             <article class="content">
                 @Body
                 @* <footer> *@
@@ -20,11 +14,9 @@
             @* <div class="footer"> *@
             @*     <p>© Siemens 1996 – 2025</p> *@
             @* </div> *@
-            
+
         </main>
     </div>
-    
-    
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
