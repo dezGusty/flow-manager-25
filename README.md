@@ -97,12 +97,12 @@ flow-manager-25/
 - **API/**: Hosts the web API, exposes endpoints for the client, contains controllers and configuration.
 - **Application/**: Contains business logic, use cases, and interfaces for orchestrating operations.
 - **Client/**: Blazor WebAssembly frontend, with pages, reusable components, and static UI resources.
-- **Domain/**:  
+- **Domain/**:
   - **Entities/**: Core domain entities such as Team, User, Flow, etc.
   - **Dtos/**: Data Transfer Objects, used to transfer data between layers (e.g., UserDto, TeamDto, FlowDto).
   - **IRepositories/**: Interfaces for repositories (e.g., ITeamRepository, IUserRepository), defining data access contracts.
   - **Exceptions/**: Domain-specific exception classes.
-- **Infrastructure/**:  
+- **Infrastructure/**:
   - **Context/**: Database context and configuration.
   - **Middleware/**: Custom request/response pipeline logic (auth, error handling, etc.).
   - **Migrations/**: Database schema migrations for setup and updates.
@@ -123,53 +123,74 @@ Make sure you have [Docker](https://www.docker.com/get-started) installed and ru
 ### Run the application locally with Docker
 
 1. **Clone the repo:**
+
    ```bash
    git clone https://github.com/dezGusty/flow-manager-25.git
    cd flow-manager-25
    ```
 
 2. **Pull the docker images:**
+
    ```bash
    docker pull stancunicol/flowmanager:api-latest
    docker pull stancunicol/flowmanager:client-latest
    ```
 
-3. **Create a docker-compose.yml in the project root:**
-   ```bash
-   services:
-     api:
-      image: stancunicol/flowmanager:api-latest
-      container_name: flowmanager-api
-      ports:
-        - "5000:8080"
-  
-     client:
-      image: stancunicol/flowmanager:client-latest
-      container_name: flowmanager-client
-      ports:
-        - "3000:80"
-      environment:
-        - API_URL=http://api:80
-      depends_on:
-        - api
-   ```
+3. **Navigate to the FlowManager folder:**
 
-4. **Go to app folder:**
    ```bash
    cd FlowManager
-   ```   
+   ```
 
-5. **Run the app:**
+4. **Run the application:**
+
    ```bash
    docker compose up -d
    ```
 
-   If you go to http://localhost:3000, the app is running.
+   The database will be automatically initialized with migrations and seed data on first run.
 
-   For the app to stop:
+5. **Access the application:**
+   - **Client UI:** http://localhost:3000
+   - **API:** http://localhost:5000
+
+6. **Login with default credentials:**
+   - **Admin:** `admin.user@simulator.com` / `admin123`
+   - **Moderator:** `moderator.user@simulator.com` / `moderator123`
+   - **Basic User:** `basic.user@simulator.com` / `basic123`
+
+7. **Stop the application:**
+
    ```bash
    docker compose down
    ```
+
+   > **Note:** The database is persisted in a Docker volume named `flowmanager-data`, so your data will remain even after stopping the containers.
+
+### Troubleshooting
+
+- **Database initialization issues:** If you see "no such table" errors, the database volume may be corrupted. Remove it and restart:
+
+  ```bash
+  docker compose down
+  docker volume rm flowmanager-data
+  docker compose up -d
+  ```
+
+- **Port conflicts:** If ports 3000 or 5000 are already in use, modify the port mappings in `docker-compose.yml`:
+
+  ```yaml
+  ports:
+    - "3001:80" # Change 3000 to 3001 for client
+    - "5001:8080" # Change 5000 to 5001 for API
+  ```
+
+- **Fresh start:** To completely reset the application:
+  ```bash
+  docker compose down
+  docker volume rm flowmanager-data
+  docker compose up -d
+  ```
 
 ### Publish and update image to Docker Hub
 
@@ -199,10 +220,10 @@ docker push <your_dockerhub_username>/flow-manager-2025:latest
 1. Open the project in Visual Studio 2022+.
 2. Go to **Configure Startup Project...** (right click on the solution, or from the top menu).
 3. For each component project (FlowManager.API and FlowManager.Client):
-    - Select **Action: Start**
-    - Select **Debug Target: https**
-    - Always run with **New Profile** (create a new profile for each debug session).
-   
+   - Select **Action: Start**
+   - Select **Debug Target: https**
+   - Always run with **New Profile** (create a new profile for each debug session).
+
 ---
 
 ## 📝 Additional Notes

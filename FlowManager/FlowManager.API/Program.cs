@@ -51,7 +51,7 @@ builder.Services.ConfigureApplicationCookie(options =>
         context.Response.StatusCode = 401;
         return Task.CompletedTask;
     };
-    options.Events.OnRedirectToAccessDenied = context =>    
+    options.Events.OnRedirectToAccessDenied = context =>
     {
         context.Response.StatusCode = 403;
         return Task.CompletedTask;
@@ -100,9 +100,15 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine($"[DB] Using connection: {dbContext.Database.GetDbConnection().ConnectionString}");
     IPasswordHasher<User> passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
 
-    // dbContext.Database.Migrate();
+    // Apply migrations and create database if it doesn't exist
+    dbContext.Database.Migrate();
+    Console.WriteLine("[DB] Migrations applied successfully");
 
-    // BasicSeed.Populate(dbContext, passwordHasher);
+    // Seed initial data (admin, moderator, basic users)
+    BasicSeed.Populate(dbContext, passwordHasher);
+    Console.WriteLine("[DB] Basic seed data populated");
+
+    // Uncomment below to add mock data for testing
     // MockDataSeed.Populate(dbContext, passwordHasher);
 }
 

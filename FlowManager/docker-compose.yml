@@ -4,6 +4,11 @@ services:
     container_name: flowmanager-api
     ports:
       - "5000:8080"
+    volumes:
+      - flowmanager-data:/app/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    restart: unless-stopped
 
   client:
     image: stancunicol/flowmanager:client-latest
@@ -14,3 +19,8 @@ services:
       - API_URL=http://api:80
     depends_on:
       - api
+    restart: unless-stopped
+
+volumes:
+  flowmanager-data:
+    driver: local
