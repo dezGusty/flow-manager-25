@@ -43,8 +43,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.Name = "FlowManagerAuth";
     options.LoginPath = "/api/auth/login";
     options.AccessDeniedPath = "/access-denied";
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.Cookie.HttpOnly = false;
     options.Events.OnRedirectToLogin = context =>
     {
@@ -117,9 +117,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 
 // Use CORS
 app.UseRouting();

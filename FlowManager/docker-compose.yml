@@ -1,6 +1,9 @@
 services:
   api:
-    image: stancunicol/flowmanager:api-latest
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: flowmanager-api:local
     container_name: flowmanager-api
     ports:
       - "5000:8080"
@@ -11,7 +14,10 @@ services:
     restart: unless-stopped
 
   client:
-    image: stancunicol/flowmanager:client-latest
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    image: flowmanager-client:local
     container_name: flowmanager-client
     ports:
       - "3000:80"
