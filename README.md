@@ -132,7 +132,7 @@ Make sure you have [Docker](https://www.docker.com/get-started) installed and ru
 2. **Pull the docker images:**
 
    ```bash
-   docker pull stancunicol/flowmanager:api-latest
+   docker pull triodor/flowmanager:api-latest
    docker pull stancunicol/flowmanager:client-latest
    ```
 
@@ -140,6 +140,37 @@ Make sure you have [Docker](https://www.docker.com/get-started) installed and ru
 
    ```bash
    cd FlowManager
+   ```
+
+   **Ensure your `docker-compose.yml` contains:**
+
+   ```yaml
+   services:
+     api:
+       image: triodor/flowmanager:api-latest
+       container_name: flowmanager-api
+       ports:
+         - "5000:8080"
+       volumes:
+         - flowmanager-data:/app/data
+       environment:
+         - ASPNETCORE_ENVIRONMENT=Production
+       restart: unless-stopped
+
+     client:
+       image: stancunicol/flowmanager:client-latest
+       container_name: flowmanager-client
+       ports:
+         - "3000:80"
+       environment:
+         - API_URL=http://api:80
+       depends_on:
+         - api
+       restart: unless-stopped
+
+   volumes:
+     flowmanager-data:
+       driver: local
    ```
 
 4. **Run the application:**
@@ -167,6 +198,17 @@ Make sure you have [Docker](https://www.docker.com/get-started) installed and ru
 
    > **Note:** The database is persisted in a Docker volume named `flowmanager-data`, so your data will remain even after stopping the containers.
 
+### How It Works Across Devices
+
+The Docker setup is designed to work consistently on any device:
+
+- **Database Initialization:** On first run, the API automatically creates the SQLite database, applies all migrations, and seeds initial data (admin, moderator, and basic users). No manual database setup needed.
+- **Data Persistence:** The database is stored in a Docker volume (`flowmanager-data`), which persists even when containers are stopped or removed.
+- **Cross-Platform:** Docker images work on Windows, macOS, and Linux without modification.
+- **No Local Dependencies:** Everything runs in containers - no need to install .NET, SQLite, or other dependencies on your machine.
+
+Anyone can clone the repo, run `docker compose up -d`, and have a fully working application with pre-populated test users in seconds!
+
 ### Troubleshooting
 
 - **Database initialization issues:** If you see "no such table" errors, the database volume may be corrupted. Remove it and restart:
@@ -192,26 +234,68 @@ Make sure you have [Docker](https://www.docker.com/get-started) installed and ru
   docker compose up -d
   ```
 
-### Publish and update image to Docker Hub
+### Build and Push Docker Images
 
-Replace `<your_dockerhub_username>` with your Docker Hub account.
+If you need to build and push your own images to Docker Hub:
 
-```bash
-docker build -t <your_dockerhub_username>/flow-manager-2025:latest .
-docker login
-docker push <your_dockerhub_username>/flow-manager-2025:latest
-```
+1. **Build the API image:**
 
-#### If you update the image:
-
-1. Build the new image:
    ```bash
-   docker build -t <your_dockerhub_username>/flow-manager-2025:latest .
+   cd FlowManager
+   docker build -f Dockerfile.api -t <your_dockerhub_username>/flowmanager:api-latest .
    ```
-2. Push to Docker Hub:
+
+2. **Build the Client image:**
+
    ```bash
-   docker push <your_dockerhub_username>/flow-manager-2025:latest
+   docker build -f Dockerfile.client -t <your_dockerhub_username>/flowmanager:client-latest .
    ```
+
+3. **Login to Docker Hub:**
+
+   ```bash
+   docker login
+   ```
+
+4. **Push both images:**
+
+   ```bash
+   docker push <your_dockerhub_username>/flowmanager:api-latest
+   docker push <your_dockerhub_username>/flowmanager:client-latest
+   ```
+
+5. **Update `docker-compose.yml`** to use your images:
+
+   ```yaml
+   services:
+     api:
+       image: <your_dockerhub_username>/flowmanager:api-latest
+       container_name: flowmanager-api
+       ports:
+         - "5000:8080"
+       volumes:
+         - flowmanager-data:/app/data
+       environment:
+         - ASPNETCORE_ENVIRONMENT=Production
+       restart: unless-stopped
+
+     client:
+       image: <your_dockerhub_username>/flowmanager:client-latest
+       container_name: flowmanager-client
+       ports:
+         - "3000:80"
+       environment:
+         - API_URL=http://api:80
+       depends_on:
+         - api
+       restart: unless-stopped
+
+   volumes:
+     flowmanager-data:
+       driver: local
+   ```
+
+6. **Share with your team:** Others can now pull and run your images on any device using the same `docker-compose.yml` configuration.
 
 ---
 

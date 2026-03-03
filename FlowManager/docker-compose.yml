@@ -1,9 +1,6 @@
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    image: flowmanager-api:local
+    image: triodor/flowmanager:api-latest
     container_name: flowmanager-api
     ports:
       - "5000:8080"
@@ -14,10 +11,7 @@ services:
     restart: unless-stopped
 
   client:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
-    image: flowmanager-client:local
+    image: stancunicol/flowmanager:client-latest
     container_name: flowmanager-client
     ports:
       - "3000:80"
